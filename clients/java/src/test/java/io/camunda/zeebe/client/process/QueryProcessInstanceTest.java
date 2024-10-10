@@ -58,11 +58,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .filter(
             f ->
-                f.key(123L)
-                    .bpmnProcessId("bpmnProcessId")
-                    .processName("Demo process")
-                    .processVersion(7)
-                    .processVersionTag("v7")
+                f.processInstanceKey(123L)
+                    .processDefinitionId("bpmnProcessId")
+                    .processDefinitionName("Demo process")
+                    .processDefinitionVersion(7)
+                    .processDefinitionVersionTag("v7")
                     .processDefinitionKey(15L)
                     .rootProcessInstanceKey(20L)
                     .parentProcessInstanceKey(25L)
@@ -71,7 +71,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .startDate("startDate")
                     .endDate("endDate")
                     .state("ACTIVE")
-                    .incident(true)
+                    .hasIncident(true)
                     .tenantId("tenant"))
         .send()
         .join();
@@ -80,7 +80,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getKey()).isEqualTo(123L);
+    assertThat(filter.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(filter.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
     assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
     assertThat(filter.getProcessDefinitionVersion()).isEqualTo(7);
@@ -93,7 +93,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getStartDate()).isEqualTo("startDate");
     assertThat(filter.getEndDate()).isEqualTo("endDate");
     assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
-    assertThat(filter.getIncident()).isEqualTo(true);
+    assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 
@@ -104,15 +104,15 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .newProcessInstanceQuery()
         .sort(
             s ->
-                s.key()
+                s.processInstanceKey()
                     .asc()
-                    .bpmnProcessId()
+                    .processDefinitionId()
                     .desc()
-                    .processName()
+                    .processDefinitionName()
                     .asc()
-                    .processVersion()
+                    .processDefinitionVersion()
                     .asc()
-                    .processVersionTag()
+                    .processDefinitionVersionTag()
                     .desc()
                     .processDefinitionKey()
                     .desc()

@@ -17,15 +17,15 @@ package io.camunda.zeebe.client.api.search.response;
 
 public interface ProcessInstance {
 
-  Long getKey();
+  Long getProcessInstanceKey();
 
-  String getBpmnProcessId();
+  String getProcessDefinitionId();
 
-  String getProcessName();
+  String getProcessDefinitionName();
 
-  Integer getProcessVersion();
+  Integer getProcessDefinitionVersion();
 
-  String getProcessVersionTag();
+  String getProcessDefinitionVersionTag();
 
   Long getProcessDefinitionKey();
 
@@ -43,7 +43,7 @@ public interface ProcessInstance {
 
   String getState();
 
-  Boolean getIncident();
+  Boolean getHasIncident();
 
   String getTenantId();
 }
