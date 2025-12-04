@@ -43,7 +43,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstance
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
@@ -51,6 +50,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -365,7 +365,12 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstancesBatchOperation(
       final ProcessInstanceFilter filter) {
-    throw new UnsupportedOperationException("Batch deletion of process instances is coming soon!");
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public SearchQueryResult<IncidentEntity> searchIncidents(
@@ -421,5 +426,5 @@ public final class ProcessInstanceServices
 
   public record ProcessInstanceModifyBatchOperationRequest(
       ProcessInstanceFilter filter,
-      List<BatchOperationProcessInstanceModificationMoveInstruction> moveInstructions) {}
+      List<ProcessInstanceModificationMoveInstruction> moveInstructions) {}
 }

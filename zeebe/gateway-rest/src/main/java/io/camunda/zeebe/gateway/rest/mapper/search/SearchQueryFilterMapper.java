@@ -366,6 +366,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getOperationType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::operationTypeOperations);
     }
 
     return builder.build();
@@ -579,6 +582,10 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getDecisionRequirementsKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsName())
+          .ifPresent(builder::decisionRequirementsNames);
+      ofNullable(filter.getDecisionRequirementsVersion())
+          .ifPresent(builder::decisionRequirementsVersions);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 

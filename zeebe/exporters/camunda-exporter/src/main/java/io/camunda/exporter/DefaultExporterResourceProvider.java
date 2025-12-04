@@ -33,6 +33,7 @@ import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
+import io.camunda.exporter.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
@@ -93,6 +94,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
@@ -117,6 +119,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
+import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -141,6 +144,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private ExporterEntityCacheImpl<String, CachedBatchOperationEntity> batchOperationCache;
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
+  private ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity> decisionRequirementsCache;
 
   @Override
   public void init(
@@ -167,6 +171,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry));
+
+    decisionRequirementsCache =
+        new ExporterEntityCacheImpl<>(
+            configuration.getDecisionRequirementsCache().getMaxCacheSize(),
+            entityCacheProvider.getDecisionRequirementsCacheLoader(
+                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+            new CaffeineCacheStatsCounter(NAMESPACE, "decisionRequirements", meterRegistry));
 
     formCache =
         new ExporterEntityCacheImpl<>(
@@ -207,7 +218,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GroupEntityRemovedHandler(
                 indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new DecisionHandler(indexDescriptors.get(DecisionIndex.class).getFullQualifiedName()),
+            new DecisionHandler(
+                indexDescriptors.get(DecisionIndex.class).getFullQualifiedName(),
+                decisionRequirementsCache),
             new ListViewProcessInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
             new ListViewFlowNodeFromIncidentHandler(
@@ -227,7 +240,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName(),
+                decisionRequirementsCache),
             new PostImporterQueueFromIncidentHandler(
                 indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromIncidentHandler(
@@ -248,6 +262,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
+            new HistoryDeletionDeletedHandler(
+                indexDescriptors.get(HistoryDeletionIndex.class).getFullQualifiedName()),
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
                 exporterMetadata),
@@ -368,6 +384,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       processCache.clear();
       processCache = null;
     }
+    if (decisionRequirementsCache != null) {
+      decisionRequirementsCache.clear();
+      decisionRequirementsCache = null;
+    }
   }
 
   @Override
@@ -407,6 +427,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache() {
     return processCache;
+  }
+
+  @Override
+  public ExporterEntityCacheImpl<Long, CachedDecisionRequirementsEntity>
+      getDecisionRequirementsCache() {
+    return decisionRequirementsCache;
   }
 
   @Override
